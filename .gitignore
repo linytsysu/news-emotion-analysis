@@ -8,3 +8,4 @@ env
 .ipynb_checkpoints
 
 bert_model
+model.h5
