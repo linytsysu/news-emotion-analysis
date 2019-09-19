@@ -9,3 +9,5 @@ env
 
 bert_model
 model.h5
+
+feature-extract/*.csv
