@@ -16,7 +16,7 @@ with codecs.open(vocab_path, 'r', 'utf8') as reader:
         token_dict[token] = len(token_dict)
 
 SEQ_LEN = 512
-model = keras.models.load_model('model2.h5', custom_objects=get_custom_objects())
+model = keras.models.load_model('model.h5', custom_objects=get_custom_objects())
 
 tokenizer = Tokenizer(token_dict)
 

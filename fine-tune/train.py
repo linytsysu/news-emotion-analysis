@@ -29,7 +29,7 @@ with codecs.open(vocab_path, 'r', 'utf8') as reader:
         token_dict[token] = len(token_dict)
 
 SEQ_LEN = 512
-model = load_trained_model_from_checkpoint(
+bert_model = load_trained_model_from_checkpoint(
     config_path,
     checkpoint_path,
     training=True,
@@ -85,12 +85,9 @@ y = np.array(sentiments)
 
 LR = 1e-5
 import keras
-inputs = model.inputs[:2]
-dense = model.get_layer('NSP-Dense').output
-#extract = model.get_layer('Extract').output
-#average = keras.layers.average(inputs=[dense, extract])
-h1 = keras.layers.Dense(units=64, activation='relu')(dense)
-outputs = keras.layers.Dense(units=3, activation='softmax')(h1)
+inputs = bert_model.inputs[:2]
+dense = bert_model.get_layer('NSP').output
+outputs = keras.layers.Dense(units=3, activation='softmax')(dense)
 model = keras.models.Model(inputs, outputs)
 model.compile(
     keras.optimizers.Adam(lr=LR),
@@ -111,4 +108,4 @@ model.fit(
     batch_size=BATCH_SIZE,
 )
 
-model.save('/data/bert_finetune/model3.h5')
+model.save('/data/bert_finetune/model.h5')
