@@ -86,7 +86,7 @@ y = np.array(sentiments)
 LR = 1e-5
 import keras
 inputs = bert_model.inputs[:2]
-dense = bert_model.get_layer('NSP').output
+dense = bert_model.get_layer('NSP-Dense').output
 outputs = keras.layers.Dense(units=3, activation='softmax')(dense)
 model = keras.models.Model(inputs, outputs)
 model.compile(
