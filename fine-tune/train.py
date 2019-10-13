@@ -15,9 +15,9 @@ df = df.fillna('EMPTY')
 
 df['titlecontent'] = df['title'] + df['content']
 
-config_path = '/data/bert_finetune/bert_model/bert_config.json'
-checkpoint_path = '/data/bert_finetune/bert_model/bert_model.ckpt'
-vocab_path = '/data/bert_finetune/bert_model/vocab.txt'
+config_path = '/data/bert_finetune/bert_model/roberta-wwm-ext/bert_config.json'
+checkpoint_path = '/data/bert_finetune/bert_model/roberta-wwm-ext/bert_model.ckpt'
+vocab_path = '/data/bert_finetune/bert_model/roberta-wwm-ext/vocab.txt'
 
 import codecs
 from keras_bert import load_trained_model_from_checkpoint
@@ -86,12 +86,8 @@ y = np.array(sentiments)
 LR = 1e-5
 import keras
 inputs = bert_model.inputs[:2]
-extract = bert_model.get_layer('Extract').output
 dense = bert_model.get_layer('NSP-Dense').output
-h1 = keras.layers.Dense(units=128, activation='relu')(extract)
-h2 = keras.layers.Dense(units=128, activation='relu')(dense)
-x = keras.layers.merge.Concatenate()([h1, h2])
-outputs = keras.layers.Dense(units=3, activation='softmax')(x)
+outputs = keras.layers.Dense(units=3, activation='softmax')(dense)
 model = keras.models.Model(inputs, outputs)
 model.compile(
     keras.optimizers.Adam(lr=LR),
