@@ -86,8 +86,12 @@ y = np.array(sentiments)
 LR = 1e-5
 import keras
 inputs = bert_model.inputs[:2]
+extract = bert_model.get_layer('Extract').output
 dense = bert_model.get_layer('NSP-Dense').output
-outputs = keras.layers.Dense(units=3, activation='softmax')(dense)
+h1 = keras.layers.Dense(units=128, activation='relu')(extract)
+h2 = keras.layers.Dense(units=128, activation='relu')(dense)
+x = keras.layers.merge.Concatenate()([h1, h2])
+outputs = keras.layers.Dense(units=3, activation='softmax')(x)
 model = keras.models.Model(inputs, outputs)
 model.compile(
     keras.optimizers.Adam(lr=LR),
