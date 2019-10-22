@@ -6,6 +6,7 @@ import tensorflow as tf
 import keras
 from keras_self_attention import SeqSelfAttention
 
+model_name = 'bert-base'
 
 content_df = pd.read_csv('../data/Train_DataSet.csv')
 label_df = pd.read_csv('../data/Train_DataSet_Label.csv')
@@ -15,16 +16,16 @@ train_df = train_df.fillna('EMPTY')
 
 test_df = pd.read_csv('../data/Test_DataSet.csv')
 test_df = test_df.fillna('EMPTY')
-test_title_data = pd.read_csv('./bert-base/test_title_word_vector.csv', header=None).values
-test_content_data = pd.read_csv('./bert-base/test_content_word_vector.csv', header=None).values
-test_tail_data = pd.read_csv('./bert-base/test_tail_word_vector.csv', header=None).values
+test_title_data = pd.read_csv('./%s/test_title_word_vector.csv'%(model_name), header=None).values
+test_content_data = pd.read_csv('./%s/test_content_word_vector.csv'%(model_name), header=None).values
+test_tail_data = pd.read_csv('./%s/test_tail_word_vector.csv'%(model_name), header=None).values
 X_test = np.concatenate((test_title_data, test_content_data, test_tail_data), axis=1)
 
 
 y = train_df['label'].values
-train_title_data = pd.read_csv('./bert-base/train_title_word_vector.csv', header=None).values
-train_content_data = pd.read_csv('./bert-base/train_content_word_vector.csv', header=None).values
-train_tail_data = pd.read_csv('./bert-base/train_tail_word_vector.csv', header=None).values
+train_title_data = pd.read_csv('./%s/train_title_word_vector.csv'%(model_name), header=None).values
+train_content_data = pd.read_csv('./%s/train_content_word_vector.csv'%(model_name), header=None).values
+train_tail_data = pd.read_csv('./%s/train_tail_word_vector.csv'%(model_name), header=None).values
 X = np.concatenate((train_title_data, train_content_data, train_tail_data), axis=1)
 
 from sklearn.preprocessing import LabelEncoder
@@ -165,4 +166,4 @@ submission_df['id'] = test_df['id'].values
 submission_df['prob1'] = y_pred[:, 0]
 submission_df['prob2'] = y_pred[:, 1]
 submission_df['prob3'] = y_pred[:, 2]
-submission_df.to_csv('./label_prob.csv', index=False)
+submission_df.to_csv('./%s_label_prob.csv'%(model_name), index=False)
