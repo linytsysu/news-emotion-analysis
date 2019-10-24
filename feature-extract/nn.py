@@ -5,6 +5,7 @@ from tqdm import tqdm
 import tensorflow as tf
 import keras
 from keras_self_attention import SeqSelfAttention
+from sklearn.utils import class_weight
 
 model_name = 'bert-base'
 
@@ -74,7 +75,7 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
     print(index)
     temp_model_list = []
     temp_score_list = []
-    for i in range(1):
+    for i in range(3):
         X_train, X_valid, y_train, y_valid = X[train_index], X[valid_index], y[train_index], y[valid_index]
         # model 1
         # inputs = tf.keras.Input(shape=(768 * 3,))
@@ -120,25 +121,33 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
         # output = tf.keras.layers.Dense(3, activation='softmax')(x)
         # model = tf.keras.models.Model(inputs=inputs, outputs=output)
 
+        # model 3
         # model = keras.models.Sequential([
-        #     keras.layers.Reshape((768, 3), input_shape=(768 * 3, )),
-        #     keras.layers.Conv1D(256, 3, activation='relu'),
-        #     keras.layers.Conv1D(256, 3, activation='relu'),
-        #     keras.layers.MaxPooling1D(pool_size=2),
+        #     # keras.layers.Reshape((768, 3), input_shape=(768 * 3, )),
+        #     # keras.layers.Conv1D(256, 3, activation='relu'),
+        #     # keras.layers.Conv1D(256, 3, activation='relu'),
+        #     # keras.layers.MaxPooling1D(pool_size=2),
+        #     keras.layers.Dense(128, activation='relu', input_shape=(768 * 3, )),
+        #     keras.layers.Reshape((128, 1)),
         #     keras.layers.Bidirectional(keras.layers.LSTM(64, return_sequences=True)),
         #     SeqSelfAttention(attention_activation='sigmoid'),
         #     keras.layers.Flatten(),
         #     keras.layers.Dense(3, activation='softmax')
         # ])
 
+        # model 4
         model = keras.models.Sequential([
-            keras.layers.Dense(units=32, input_shape=(768 * 3, )),
+            keras.layers.Dense(units=64, input_shape=(768 * 3, )),
             keras.layers.Dense(units=32),
             keras.layers.Dense(3, activation='softmax')
         ])
 
-        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=2)
+        y_ = np.argmax(y_train, axis=1)
+        class_weights = class_weight.compute_sample_weight('balanced', np.unique(y_), y_)
+        class_weights = dict(enumerate(class_weights))
+
+        model.compile(optimizer=keras.optimizers.Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=2, class_weight=class_weights)
         y_pred = model.predict(X_valid)
         y_valid = np.argmax(y_valid, axis=1)
         y_pred = np.argmax(y_pred, axis=1)
@@ -166,4 +175,4 @@ submission_df['id'] = test_df['id'].values
 submission_df['prob1'] = y_pred[:, 0]
 submission_df['prob2'] = y_pred[:, 1]
 submission_df['prob3'] = y_pred[:, 2]
-submission_df.to_csv('./%s_label_prob.csv'%(model_name), index=False)
+submission_df.to_csv('./%s_bilstm_attention_class_weight_label_prob.csv'%(model_name), index=False)

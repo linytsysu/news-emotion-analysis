@@ -47,6 +47,7 @@ from keras_bert import Tokenizer, get_custom_objects
 #     return focal_loss_fixed
 
 model_name = 'bert-base'
+model_type = 'batch-16'
 
 test_df = pd.read_csv('/data/bert_finetune/data/Test_DataSet.csv')
 test_df = test_df.fillna('EMPTY')
@@ -62,7 +63,7 @@ with codecs.open(vocab_path, 'r', 'utf8') as reader:
 SEQ_LEN = 512
 custom_objects = get_custom_objects()
 # custom_objects['focal_loss_fixed'] = focal_loss([763, 3640, 2925])
-model = keras.models.load_model('./model/%s.h5'%(model_name), custom_objects=custom_objects)
+model = keras.models.load_model('./model/%s-%s.h5'%(model_name, model_type), custom_objects=custom_objects)
 
 tokenizer = Tokenizer(token_dict)
 
@@ -99,5 +100,5 @@ submission_df['id'] = new_id
 submission_df['prob1'] = y_pred[:, 0]
 submission_df['prob2'] = y_pred[:, 1]
 submission_df['prob3'] = y_pred[:, 2]
-submission_df.to_csv('%s_prob.csv'%(model_name), index=None)
+submission_df.to_csv('%s-%s_prob.csv'%(model_name, model_type), index=None)
 
