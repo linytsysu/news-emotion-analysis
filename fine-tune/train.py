@@ -3,9 +3,10 @@
 
 import numpy as np
 import pandas as pd
+import re
 
 model_name = 'bert-base'
-model_type = 'batch-16'
+model_type = 'preprocess'
 
 content_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet.csv')
 label_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet_Label.csv')
@@ -16,7 +17,20 @@ print(df[df['label'] == 2].shape, df[df['label'] == 1].shape, df[df['label'] == 
 
 df = df.fillna('EMPTY')
 
+df['content'] = [re.sub(r'\s+', ' ', content) for content in df['content'].values]
+df['title'] = [title + '\n' for title in df['title'].values]
 df['titlecontent'] = df['title'] + df['content']
+
+text_list = []
+for i in range(df.shape[0]):
+    text = df['titlecontent'][i]
+    text = re.sub(r'\\n+', '。', text)
+    text = text.replace('。。', '。')
+    text = text.replace('？。', '。')
+    text = text.replace('！。', '。')
+    text = text.replace(' 。', '。')
+    text_list.append(text)
+df['titlecontent'] = text_list
 
 config_path = '/data/bert_finetune/bert_model/%s/bert_config.json'%(model_name)
 checkpoint_path = '/data/bert_finetune/bert_model/%s/bert_model.ckpt'%(model_name)
@@ -65,7 +79,7 @@ class OurTokenizer(Tokenizer):
 tokenizer = OurTokenizer(token_dict)
 
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 indices, sentiments = [], []
 data = df[['titlecontent', 'label']].values
 for i in range(data.shape[0]):

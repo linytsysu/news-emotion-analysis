@@ -18,15 +18,17 @@ train_df = train_df.fillna('EMPTY')
 test_df = pd.read_csv('../data/Test_DataSet.csv')
 test_df = test_df.fillna('EMPTY')
 test_title_data = pd.read_csv('./%s/test_title_word_vector.csv'%(model_name), header=None).values
-test_content_data = pd.read_csv('./%s/test_content_word_vector.csv'%(model_name), header=None).values
+test_content_data = pd.read_csv('./%s/test_content_2_word_vector.csv'%(model_name), header=None).values
 test_tail_data = pd.read_csv('./%s/test_tail_word_vector.csv'%(model_name), header=None).values
+test_summary_data = pd.read_csv('./%s/test_summary_word_vector.csv'%(model_name), header=None).values
 X_test = np.concatenate((test_title_data, test_content_data, test_tail_data), axis=1)
 
 
 y = train_df['label'].values
 train_title_data = pd.read_csv('./%s/train_title_word_vector.csv'%(model_name), header=None).values
-train_content_data = pd.read_csv('./%s/train_content_word_vector.csv'%(model_name), header=None).values
+train_content_data = pd.read_csv('./%s/train_content_2_word_vector.csv'%(model_name), header=None).values
 train_tail_data = pd.read_csv('./%s/train_tail_word_vector.csv'%(model_name), header=None).values
+train_summary_data = pd.read_csv('./%s/train_summary_word_vector.csv'%(model_name), header=None).values
 X = np.concatenate((train_title_data, train_content_data, train_tail_data), axis=1)
 
 from sklearn.preprocessing import LabelEncoder
@@ -147,7 +149,7 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
         class_weights = dict(enumerate(class_weights))
 
         model.compile(optimizer=keras.optimizers.Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=2, class_weight=class_weights)
+        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=0)
         y_pred = model.predict(X_valid)
         y_valid = np.argmax(y_valid, axis=1)
         y_pred = np.argmax(y_pred, axis=1)
@@ -175,4 +177,4 @@ submission_df['id'] = test_df['id'].values
 submission_df['prob1'] = y_pred[:, 0]
 submission_df['prob2'] = y_pred[:, 1]
 submission_df['prob3'] = y_pred[:, 2]
-submission_df.to_csv('./%s_bilstm_attention_class_weight_label_prob.csv'%(model_name), index=False)
+submission_df.to_csv('./%s_class_weight_label_prob.csv'%(model_name), index=False)
