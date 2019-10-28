@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 from bert_serving.client import BertClient
 
-model_name = 'bert-base'
+model_name = 'roberta-wwm-large-ext'
 
 #%%
 bert_client = BertClient()

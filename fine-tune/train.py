@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import re
 
-model_name = 'bert-base'
-model_type = 'preprocess'
+model_name = 'roberta-wwm-large-ext'
+model_type = 'normal'
 
 content_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet.csv')
 label_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet_Label.csv')
@@ -21,16 +21,16 @@ df['content'] = [re.sub(r'\s+', ' ', content) for content in df['content'].value
 df['title'] = [title + '\n' for title in df['title'].values]
 df['titlecontent'] = df['title'] + df['content']
 
-text_list = []
-for i in range(df.shape[0]):
-    text = df['titlecontent'][i]
-    text = re.sub(r'\\n+', '。', text)
-    text = text.replace('。。', '。')
-    text = text.replace('？。', '。')
-    text = text.replace('！。', '。')
-    text = text.replace(' 。', '。')
-    text_list.append(text)
-df['titlecontent'] = text_list
+# text_list = []
+# for i in range(df.shape[0]):
+#     text = df['titlecontent'][i]
+#     text = re.sub(r'\\n+', '。', text)
+#     text = text.replace('。。', '。')
+#     text = text.replace('？。', '。')
+#     text = text.replace('！。', '。')
+#     text = text.replace(' 。', '。')
+#     text_list.append(text)
+# df['titlecontent'] = text_list
 
 config_path = '/data/bert_finetune/bert_model/%s/bert_config.json'%(model_name)
 checkpoint_path = '/data/bert_finetune/bert_model/%s/bert_model.ckpt'%(model_name)

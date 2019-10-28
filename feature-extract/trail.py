@@ -5,9 +5,8 @@ from tqdm import tqdm
 import tensorflow as tf
 import keras
 from keras_self_attention import SeqSelfAttention
-from sklearn.utils import class_weight
 
-model_name = 'roberta-wwm-large-ext'
+model_name = 'bert-base'
 
 content_df = pd.read_csv('../data/Train_DataSet.csv')
 label_df = pd.read_csv('../data/Train_DataSet_Label.csv')
@@ -20,14 +19,13 @@ test_df = test_df.fillna('EMPTY')
 test_title_data = pd.read_csv('./%s/test_title_word_vector.csv'%(model_name), header=None).values
 test_content_data = pd.read_csv('./%s/test_content_word_vector.csv'%(model_name), header=None).values
 test_tail_data = pd.read_csv('./%s/test_tail_word_vector.csv'%(model_name), header=None).values
-# test_summary_data = pd.read_csv('./%s/test_summary_word_vector.csv'%(model_name), header=None).values
 X_test = np.concatenate((test_title_data, test_content_data, test_tail_data), axis=1)
+
 
 y = train_df['label'].values
 train_title_data = pd.read_csv('./%s/train_title_word_vector.csv'%(model_name), header=None).values
 train_content_data = pd.read_csv('./%s/train_content_word_vector.csv'%(model_name), header=None).values
 train_tail_data = pd.read_csv('./%s/train_tail_word_vector.csv'%(model_name), header=None).values
-# train_summary_data = pd.read_csv('./%s/train_summary_word_vector.csv'%(model_name), header=None).values
 X = np.concatenate((train_title_data, train_content_data, train_tail_data), axis=1)
 
 from sklearn.preprocessing import LabelEncoder
@@ -50,12 +48,12 @@ class EarlyStoppingByF1(keras.callbacks.Callback):
         self.best_weights = None
 
     def on_epoch_end(self, epoch, logs={}):
-        y_pred = self.model.predict(self.validation_data[0])
-        y_valid = np.argmax(self.validation_data[1], axis=1)
+        y_pred = self.model.predict([self.validation_data[0], self.validation_data[1]])
+        y_valid = np.argmax(self.validation_data[2], axis=1)
         y_pred = np.argmax(y_pred, axis=1)
         f1 = f1_score(y_valid, y_pred, average='macro')
         self.val_f1s.append(f1)
-        #print('\t - val_f1: %f'%f1)
+        print('\t - val_f1: %f'%f1)
 
         if self.best_f1 < f1:
             self.best_f1 = f1
@@ -137,19 +135,36 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
         # ])
 
         # model 4
-        model = keras.models.Sequential([
-            keras.layers.Dense(units=64, input_shape=(1024 * 3, )),
-            keras.layers.Dense(units=32),
-            keras.layers.Dense(3, activation='softmax')
-        ])
+        # model = keras.models.Sequential([
+        #     keras.layers.Dense(units=64, input_shape=(768 * 3, )),
+        #     keras.layers.Dense(units=32),
+        #     keras.layers.Dense(3, activation='softmax')
+        # ])
 
-        y_ = np.argmax(y_train, axis=1)
-        class_weights = class_weight.compute_sample_weight('balanced', np.unique(y_), y_)
-        class_weights = dict(enumerate(class_weights))
+        title_inputs = keras.Input(shape=(768,))
+        title_reshape = keras.layers.Reshape((768, 1))(title_inputs)
+        title_conv1d = keras.layers.Conv1D(256, 3, activation='relu')(title_reshape)
+        title_pooling = keras.layers.MaxPooling1D(pool_size=2)(title_conv1d)
+        title_bilstm = keras.layers.Bidirectional(keras.layers.LSTM(64, return_sequences=True))(title_pooling)
+        title_attention = SeqSelfAttention(attention_activation='sigmoid')(title_bilstm)
+        title_flatten = keras.layers.Flatten()(title_attention)
 
-        model.compile(optimizer=keras.optimizers.Adam(lr=5e-5), loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=0)
-        y_pred = model.predict(X_valid)
+        content_inputs = keras.Input(shape=(768,))
+        content_reshape = keras.layers.Reshape((768, 1))(content_inputs)
+        content_conv1d = keras.layers.Conv1D(256, 3, activation='relu')(content_reshape)
+        content_pooling = keras.layers.MaxPooling1D(pool_size=2)(content_conv1d)
+        content_bilstm = keras.layers.Bidirectional(keras.layers.LSTM(64, return_sequences=True))(content_pooling)
+        content_attention = SeqSelfAttention(attention_activation='sigmoid')(content_bilstm)
+        content_flatten = keras.layers.Flatten()(content_attention)
+
+        x = keras.layers.merge.concatenate([title_flatten, content_flatten])
+        output = keras.layers.Dense(3, activation='softmax')(x)
+
+        model = keras.models.Model(inputs=[title_inputs, content_inputs], outputs=output)
+
+        model.compile(optimizer=keras.optimizers.Adam(lr=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+        model.fit([X_train[:, :768], X_train[:, 768: 768 * 2]], y_train, validation_data=([X_valid[:, :768], X_valid[:, 768: 768 * 2]], y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=2)
+        y_pred = model.predict([X_valid[:, :768], X_valid[:, 768: 768 * 2]])
         y_valid = np.argmax(y_valid, axis=1)
         y_pred = np.argmax(y_pred, axis=1)
         valid_score = f1_score(y_valid, y_pred, average='macro')
@@ -176,4 +191,4 @@ submission_df['id'] = test_df['id'].values
 submission_df['prob1'] = y_pred[:, 0]
 submission_df['prob2'] = y_pred[:, 1]
 submission_df['prob3'] = y_pred[:, 2]
-submission_df.to_csv('./%s_label_prob.csv'%(model_name), index=False)
+submission_df.to_csv('./%s_bilstm_attention_label_prob.csv'%(model_name), index=False)
