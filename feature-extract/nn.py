@@ -7,7 +7,7 @@ import keras
 from keras_self_attention import SeqSelfAttention
 from sklearn.utils import class_weight
 
-model_name = 'roberta-wwm-large-ext'
+model_name = 'roberta-wwm-ext'
 
 content_df = pd.read_csv('../data/Train_DataSet.csv')
 label_df = pd.read_csv('../data/Train_DataSet_Label.csv')
@@ -55,7 +55,7 @@ class EarlyStoppingByF1(keras.callbacks.Callback):
         y_pred = np.argmax(y_pred, axis=1)
         f1 = f1_score(y_valid, y_pred, average='macro')
         self.val_f1s.append(f1)
-        #print('\t - val_f1: %f'%f1)
+        print('\t - val_f1: %f'%f1)
 
         if self.best_f1 < f1:
             self.best_f1 = f1
@@ -102,25 +102,25 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
         # model = tf.keras.models.Model(inputs=inputs, outputs=output)
 
         # model 2
-        # inputs = tf.keras.Input(shape=(768 *3,))
-        # h1 = tf.keras.layers.Dense(128, activation='relu')(inputs)
-        # h2 = tf.keras.layers.Dense(128, activation='relu')(h1)
+        inputs = keras.Input(shape=(768 *3,))
+        h1 = keras.layers.Dense(768, activation='relu')(inputs)
+        h2 = keras.layers.Dense(512, activation='relu')(h1)
 
-        # reshape = tf.keras.layers.Reshape((1, 128))(h2)
-        # bilstm = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64))(reshape)
+        reshape = keras.layers.Reshape((1, 512))(h2)
+        bilstm = keras.layers.Bidirectional(keras.layers.LSTM(64))(reshape)
 
-        # attention = tf.keras.layers.Dense(1, activation='tanh')(bilstm)
-        # attention = tf.keras.layers.Flatten()(attention)
-        # attention = tf.keras.layers.Activation('softmax')(attention)
-        # attention = tf.keras.layers.RepeatVector(128)(attention)
-        # attention = tf.keras.layers.Permute((2, 1))(attention)
+        attention = keras.layers.Dense(1, activation='tanh')(bilstm)
+        # attention = keras.layers.Flatten()(attention)
+        attention = keras.layers.Activation('softmax')(attention)
+        attention = keras.layers.RepeatVector(512)(attention)
+        attention = keras.layers.Permute((2, 1))(attention)
 
-        # x = tf.keras.layers.multiply([h2, attention])
-        # x = tf.keras.layers.Lambda(lambda xx: tf.keras.backend.sum(xx, axis=1))(x)
+        x = keras.layers.multiply([h2, attention])
+        x = keras.layers.Lambda(lambda xx: keras.backend.sum(xx, axis=1))(x)
 
-        # x = tf.keras.layers.Dense(32, activation='relu')(x)
-        # output = tf.keras.layers.Dense(3, activation='softmax')(x)
-        # model = tf.keras.models.Model(inputs=inputs, outputs=output)
+        x = keras.layers.Dense(32, activation='relu')(x)
+        output = keras.layers.Dense(3, activation='softmax')(x)
+        model = keras.models.Model(inputs=inputs, outputs=output)
 
         # model 3
         # model = keras.models.Sequential([
@@ -128,27 +128,29 @@ for index, (train_index, valid_index) in enumerate(kf.split(X, y)):
         #     # keras.layers.Conv1D(256, 3, activation='relu'),
         #     # keras.layers.Conv1D(256, 3, activation='relu'),
         #     # keras.layers.MaxPooling1D(pool_size=2),
-        #     keras.layers.Dense(128, activation='relu', input_shape=(768 * 3, )),
-        #     keras.layers.Reshape((128, 1)),
+        #     keras.layers.Dense(256, activation='relu', input_shape=(1024 * 3, )),
+        #     keras.layers.Dense(128, activation='relu'),
+        #     keras.layers.Reshape((1, 128)),
         #     keras.layers.Bidirectional(keras.layers.LSTM(64, return_sequences=True)),
         #     SeqSelfAttention(attention_activation='sigmoid'),
         #     keras.layers.Flatten(),
+        #     keras.layers.Dense(32, activation='relu'),
         #     keras.layers.Dense(3, activation='softmax')
         # ])
 
         # model 4
-        model = keras.models.Sequential([
-            keras.layers.Dense(units=64, input_shape=(1024 * 3, )),
-            keras.layers.Dense(units=32),
-            keras.layers.Dense(3, activation='softmax')
-        ])
+        # model = keras.models.Sequential([
+        #    keras.layers.Dense(units=128, input_shape=(1024 * 3, )),
+        #    keras.layers.Dense(units=64),
+        #    keras.layers.Dense(3, activation='softmax')
+        # ])
 
         y_ = np.argmax(y_train, axis=1)
         class_weights = class_weight.compute_sample_weight('balanced', np.unique(y_), y_)
         class_weights = dict(enumerate(class_weights))
 
         model.compile(optimizer=keras.optimizers.Adam(lr=5e-5), loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=0)
+        model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), callbacks=[EarlyStoppingByF1()], batch_size=32, epochs=50, verbose=2)
         y_pred = model.predict(X_valid)
         y_valid = np.argmax(y_valid, axis=1)
         y_pred = np.argmax(y_pred, axis=1)

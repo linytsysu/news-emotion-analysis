@@ -47,23 +47,23 @@ from keras_bert import Tokenizer, get_custom_objects
 #         return fianal_loss
 #     return focal_loss_fixed
 
-model_name = 'bert-base'
-model_type = 'preprocess'
+model_name = 'roberta-wwm-large-ext'
+model_type = 'normal'
 
 test_df = pd.read_csv('/data/bert_finetune/data/Test_DataSet.csv')
 test_df = test_df.fillna('EMPTY')
 test_df['titlecontent'] = test_df['title'] + test_df['content']
 
-text_list = []
-for i in range(test_df.shape[0]):
-    text = test_df['titlecontent'][i]
-    text = re.sub(r'\\n+', '。', text)
-    text = text.replace('。。', '。')
-    text = text.replace('？。', '。')
-    text = text.replace('！。', '。')
-    text = text.replace(' 。', '。')
-    text_list.append(text)
-test_df['titlecontent'] = text_list
+# text_list = []
+# for i in range(test_df.shape[0]):
+#     text = test_df['titlecontent'][i]
+#     text = re.sub(r'\\n+', '。', text)
+#     text = text.replace('。。', '。')
+#     text = text.replace('？。', '。')
+#     text = text.replace('！。', '。')
+#     text = text.replace(' 。', '。')
+#     text_list.append(text)
+# test_df['titlecontent'] = text_list
 
 vocab_path = '/data/bert_finetune/bert_model/%s/vocab.txt'%(model_name)
 token_dict = {}
