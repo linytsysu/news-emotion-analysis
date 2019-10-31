@@ -49,8 +49,7 @@ from keras_bert import Tokenizer, get_custom_objects
 
 model_name = 'roberta-wwm-large-ext'
 model_type = 'normal'
-
-test_df = pd.read_csv('/data/bert_finetune/data/Test_DataSet.csv')
+test_df = pd.read_csv('../data/Test_DataSet.csv')
 test_df = test_df.fillna('EMPTY')
 test_df['titlecontent'] = test_df['title'] + test_df['content']
 
@@ -65,7 +64,7 @@ test_df['titlecontent'] = test_df['title'] + test_df['content']
 #     text_list.append(text)
 # test_df['titlecontent'] = text_list
 
-vocab_path = '/data/bert_finetune/bert_model/%s/vocab.txt'%(model_name)
+vocab_path = '../bert_model/%s/vocab.txt'%(model_name)
 token_dict = {}
 with codecs.open(vocab_path, 'r', 'utf8') as reader:
     for line in reader:

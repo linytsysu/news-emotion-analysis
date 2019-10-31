@@ -8,8 +8,8 @@ import re
 model_name = 'roberta-wwm-large-ext'
 model_type = 'normal'
 
-content_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet.csv')
-label_df = pd.read_csv('/data/bert_finetune/data/Train_DataSet_Label.csv')
+content_df = pd.read_csv('../data/Train_DataSet.csv')
+label_df = pd.read_csv('../data/Train_DataSet_Label.csv')
 
 df = content_df.merge(label_df, on='id')
 
@@ -32,9 +32,9 @@ df['titlecontent'] = df['title'] + df['content']
 #     text_list.append(text)
 # df['titlecontent'] = text_list
 
-config_path = '/data/bert_finetune/bert_model/%s/bert_config.json'%(model_name)
-checkpoint_path = '/data/bert_finetune/bert_model/%s/bert_model.ckpt'%(model_name)
-vocab_path = '/data/bert_finetune/bert_model/%s/vocab.txt'%(model_name)
+config_path = '../bert_model/%s/bert_config.json'%(model_name)
+checkpoint_path = '../bert_model/%s/bert_model.ckpt'%(model_name)
+vocab_path = '../bert_model/%s/vocab.txt'%(model_name)
 
 import codecs
 from keras_bert import load_trained_model_from_checkpoint
@@ -126,4 +126,4 @@ model.fit(
     batch_size=BATCH_SIZE,
 )
 
-model.save('/data/bert_finetune/%s-%s.h5'%(model_name, model_type))
+model.save('../%s-%s.h5'%(model_name, model_type))
